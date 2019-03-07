@@ -1,4 +1,4 @@
-package com.demo.xzhangipcdemo;
+package com.demo.xzhangipcdemo.client;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,6 +10,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
+import com.demo.xzhangipcdemo.Book;
+import com.demo.xzhangipcdemo.IBookManagerInterface;
+import com.demo.xzhangipcdemo.R;
 import com.demo.xzhangipcdemo.server.BookManagerService;
 
 import java.util.List;
