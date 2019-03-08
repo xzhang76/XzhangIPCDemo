@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private IBookManagerInterface mBookManagerInterface;
     private BookRecyclerViewAdapter mAdapter;
     private List<Book> mBooks = new ArrayList<>();
+    private IBinder.DeathRecipient mDeathRecipient; //Binder连接断裂监听
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,15 +45,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         layoutManager.setOrientation(OrientationHelper.VERTICAL);
         recyclerView.setAdapter(mAdapter);
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+
+        mDeathRecipient = new IBinder.DeathRecipient() {
+            @Override
+            public void binderDied() {
+                //Binder连接断裂时回调
+                if (mBookManagerInterface == null) {
+                    return;
+                }
+                mBookManagerInterface.asBinder().unlinkToDeath(mDeathRecipient, 0);
+                mBookManagerInterface = null;
+                bindRemoteService();
+
+            }
+        };
+        bindRemoteService();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+    private void bindRemoteService() {
         ServiceConnection serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 mBookManagerInterface = IBookManagerInterface.Stub.asInterface(service);
+                //给Binder设置死亡代理，Binder连接断裂时会回调其binderDied()
+                try {
+                    service.linkToDeath(mDeathRecipient, 0);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
