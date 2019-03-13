@@ -27,6 +27,7 @@ public class BookManagerService extends Service {
             mBooks = new ArrayList<>();
         }
         mIsServiceDestoryed = new AtomicBoolean(false);
+        new Thread(new ServiceWorker()).start();
     }
 
     @Override
@@ -64,5 +65,44 @@ public class BookManagerService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mIBinder;
+    }
+
+    private class ServiceWorker implements Runnable {
+        @Override
+        public void run() {
+            while (!mIsServiceDestoryed.get()) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                int bookIndex = 1;
+                if (mBooks != null) {
+                    bookIndex = mBooks.size() + 1;
+                }
+                Book newBook = new Book("《New Android Developer " + bookIndex +"》", "xzhang");
+                //通知client端
+                onNewBookAvailable(newBook);
+            }
+        }
+    }
+
+    private void onNewBookAvailable(Book book) {
+        if (mBooks == null) {
+            mBooks = new ArrayList<>();
+        }
+        mBooks.add(book);
+        int listenerListSize = mListenerList.beginBroadcast();
+        for (int i = 0; i < listenerListSize; i++) {
+            IOnNewBookAvailableListener listener = mListenerList.getBroadcastItem(i);
+            if (listener != null) {
+                try {
+                    listener.onNewBookAvailable(book);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        mListenerList.finishBroadcast();
     }
 }
